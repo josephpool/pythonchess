@@ -3,8 +3,8 @@ import chess_engine
 
 
 height =  width = 480
-sq_size = height/8
-black, white = (50,50,50),(255,255,255)
+sq_size = int(height/8)
+black, white = (100,100,100),(255,255,255)
 pygame.init()
 board = pygame.display.set_mode((height, width))
 clock = pygame.time.Clock()
@@ -15,22 +15,32 @@ def load_images():
 	for piece in pieces:
 		images[piece] = pygame.image.load("images/"+piece+".png")
 
-def drawboard(state):
+def drawboard(state,legal_moves, marked_piece):
 	for row in range(8):
 		for column in range(8):
 			if (row+column)%2 != 0:
 				colour = black
 			else: colour = white
 
-			x = column * sq_size
-			y = row * sq_size
+			x = int(column * sq_size)
+			y = int(row * sq_size)
 			pygame.draw.rect(board, colour, (x, y,sq_size, sq_size))
+
+
 
 			piece = state[row][column]
 			if piece != "--":
 				x = column * sq_size
-				y = row * sq_size				
+				y = row * sq_size	
 				board.blit(images[piece], pygame.Rect(x,y,sq_size,sq_size))
+
+			try:
+				if [row,column] in legal_moves[marked_piece]:
+					x = int((column+0.5)*sq_size)
+					y = int((row+0.5)*sq_size)
+					pygame.draw.circle(board, (150,180,120),(x,y),5)
+			except KeyError:
+				pass
 
 def get_sq(pos, state):
 	c = int(pos[0]/sq_size)
@@ -42,6 +52,7 @@ def main():
 	state = chess_engine.gameState()
 	update = True
 	marked_piece = False
+	state.get_legal_moves()	
 	while True:
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -49,29 +60,29 @@ def main():
 				quit()
 			if event.type == pygame.MOUSEBUTTONUP:
 				pos = get_sq(pygame.mouse.get_pos(),state)
-				if state.turn in state.Board[pos[0]][pos[1]]:
-					#show legal moves
+				
+				try:
+					if state.turn in state.Board[pos[0]][pos[1]]:
+						marked_piece = pos
+						update = True
 
-					marked_piece = pos
-					update = True
+					elif list(pos) in state.legal_moves[marked_piece]:
+						target = pos
+						state.move(marked_piece,target)
 
-				elif state.turn not in state.Board[pos[0]][pos[1]] and marked_piece:
-					#elif pos in legal_moves: 
-					target = pos
-					state.move(marked_piece,target)
-
-					if state.turn == "w": state.turn = "b"
-					elif state.turn == "b": state.turn = "w"
-					marked_piece = False
-					update = True
+						if state.turn == "w": state.turn = "b"
+						elif state.turn == "b": state.turn = "w"
+						marked_piece = False
+						update = True
+						state.get_legal_moves()
+				except KeyError:
+					pass
 
 		#board.fill(black)		
 
 		if update == True:
 
-			drawboard(state.Board)
-
-			state.get_legal_moves()
+			drawboard(state.Board, state.legal_moves, marked_piece)
 
 			pygame.display.update()
 			update = False
