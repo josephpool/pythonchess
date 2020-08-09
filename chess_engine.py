@@ -12,9 +12,72 @@ class gameState():
 		self.movelog = []
 		self.legal_moves = {}
 		self.check = False
+		castling = ["K","Q","k","q"]
+		castling_nef = "KQkq"
+		enpassant = []
 
-	def get_legal_moves(self):
+	def nef(self):
+		position = ""
+		print(self.Board)
+		#board white in uppercase; block lowercase
+		for row in self.Board:
+			empty = 0
+			counter = 0
+			for piece in row:
+				counter += 1
+				if piece == "--":
+					empty += 1
+				if "w" in piece:
+					if empty != 0:
+						position += str(empty)
+						position += piece[1].upper()
+						empty = 0
+					else:
+						position += piece[1].upper()
+				if "b" in piece:
+					if empty != 0:
+						position += str(empty)
+						position += piece[1].lower()
+						empty = 0
+					else:
+						position += piece[1].lower()
+				if counter == 8 and empty != 0:
+					position += str(empty)
+			position += "/"
+		#turn
+		position += " "+self.turn
+		#castling rights
+		position += " "+self.castling_nef
+		#en passant
+
+		#half moves since last capture or pawn advance
+
+		#number of full moves starts at 1 incremented after black's move
+
+		return position
+
+	def load_position(self, nef):
+		self.Board = []
+		rows = nef.split("/")
+		for nef_row in rows:
+			row = []
+			for piece in nef_row:
+				try:
+					empty = int(piece)
+					for i in range(empty):
+						row.append("--")
+				except:
+					if piece.isupper():
+						row.append("w"+piece)
+					elif piece.islower():
+						row.append("b"+piece.upper())
+
+			self.Board.append(row)
+		return self.Board
+
+	def get_legal_moves(self,check_check=False):
 		self.legal_moves = {}
+		self.check_moves = {}
 		row_n = 0
 		for row in self.Board:
 			column_n = 0
@@ -25,8 +88,8 @@ class gameState():
 						for i in [-1,1]:
 							moves = self.rbqInner(moves, row_n, column_n, i,0)
 							moves = self.rbqInner(moves, row_n, column_n, 0,i)
-
 						self.legal_moves[(row_n,column_n)] = moves
+
 					if "N" in piece:
 						moves = []
 
@@ -54,15 +117,15 @@ class gameState():
 									else:	
 										moves.append(next_sq)
 										break
-
 						self.legal_moves[(row_n,column_n)] = moves		
+
 					if "B" in piece:
 						moves = []
 						for i in [-1,1]:
 							for j in [-1,1]:
 								moves = self.rbqInner(moves, row_n, column_n, i,j)
-
 						self.legal_moves[(row_n,column_n)] = moves
+
 					if "Q" in piece:
 						moves = []
 						for i in [-1,1]:
@@ -70,8 +133,8 @@ class gameState():
 							moves = self.rbqInner(moves, row_n, column_n, 0,i)
 							for j in [-1,1]:
 								moves = self.rbqInner(moves, row_n, column_n, i,j)
-
 						self.legal_moves[(row_n,column_n)] = moves
+
 					if "K" in piece:
 						moves = []
 						for r in range(-1,2,1):
@@ -88,23 +151,39 @@ class gameState():
 					if "P" in piece:
 						moves = []
 						if "w" in piece:
-							moves.append([row_n-1,column_n])
-							if row_n==6:
-								moves.append([row_n-2,column_n])
-						if "b" in piece:
-							moves.append([row_n+1,column_n])
-							if row_n==1:
-								moves.append([row_n+2,column_n])
+							Dir = -1
+							start_row = 6
+							not_turn = "b"
+						elif "b" in piece:
+							Dir = 1
+							start_row = 1
+							not_turn = "w"
+
+						#move pawn foreward by one
+						if not self.occupied([row_n+Dir, column_n]):
+							moves.append([row_n+Dir, column_n])
+							#move by two on first move
+							if row_n==start_row and not self.occupied([row_n+Dir*2,column_n]):
+								moves.append([row_n+Dir*2,column_n])
+						#capture
+						for column in [-1,1]:
+							try:
+								capture_sq = self.occupied([row_n+Dir,column_n+column])
+								if not_turn == capture_sq:
+									moves.append([row_n+Dir,column_n+column])
+							except:
+								pass
+
+						#en passant
+
+						#pawn promotion?
 
 						self.legal_moves[(row_n,column_n)] = moves
-
 				column_n += 1
 			row_n += 1
-
-
-
 		return self.legal_moves
-	def rbqInner(self,moves, row, col, i,j):
+
+	def rbqInner(self,moves,check_moves, row, col, i,j):
 		dis = 1
 		blocked = False
 		while True:
@@ -113,6 +192,7 @@ class gameState():
 
 			isBlocked = self.occupied(next_sq)
 			if isBlocked == self.turn or isBlocked=="K":#blocked by own piece or by king
+				check_moves.append(next_sq)
 				break
 			elif not isBlocked:#free square
 				moves.append(next_sq)
@@ -134,8 +214,7 @@ class gameState():
 		if "w" in self.Board[sq[0]][sq[1]]:
 			return "w"
 		if "b" in self.Board[sq[0]][sq[1]]:
-			return "b"	
-
+			return "b"
 
 	def absolute_pin(self):
 		pass

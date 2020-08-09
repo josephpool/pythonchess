@@ -1,7 +1,6 @@
 import pygame
 import chess_engine
 
-
 height =  width = 480
 sq_size = int(height/8)
 black, white = (100,100,100),(255,255,255)
@@ -18,22 +17,22 @@ def load_images():
 def drawboard(state,legal_moves, marked_piece):
 	for row in range(8):
 		for column in range(8):
+			#draws chess board
 			if (row+column)%2 != 0:
 				colour = black
 			else: colour = white
-
 			x = int(column * sq_size)
 			y = int(row * sq_size)
 			pygame.draw.rect(board, colour, (x, y,sq_size, sq_size))
 
-
-
+			#draws pieces
 			piece = state[row][column]
 			if piece != "--":
 				x = column * sq_size
 				y = row * sq_size	
 				board.blit(images[piece], pygame.Rect(x,y,sq_size,sq_size))
 
+			#draws legal moves
 			try:
 				if [row,column] in legal_moves[marked_piece]:
 					x = int((column+0.5)*sq_size)
@@ -73,20 +72,15 @@ def main():
 						if state.turn == "w": state.turn = "b"
 						elif state.turn == "b": state.turn = "w"
 						marked_piece = False
-						update = True
 						state.get_legal_moves()
+						update = True
 				except KeyError:
-					pass
-
-		#board.fill(black)		
+					pass	
 
 		if update == True:
-
 			drawboard(state.Board, state.legal_moves, marked_piece)
-
 			pygame.display.update()
 			update = False
 
 if __name__ == "__main__":
 	main()
-
