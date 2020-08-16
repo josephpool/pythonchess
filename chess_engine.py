@@ -13,10 +13,10 @@ class gameState():
 		self.legal_moves = {}
 		self.check = False
 		castling = ["K","Q","k","q"]
-		castling_nef = "KQkq"
+		castling_fen = "KQkq"
 		enpassant = []
 
-	def nef(self):
+	def fen(self):
 		position = ""
 		print(self.Board)
 		#board white in uppercase; block lowercase
@@ -47,7 +47,7 @@ class gameState():
 		#turn
 		position += " "+self.turn
 		#castling rights
-		position += " "+self.castling_nef
+		position += " "+self.castling_fen
 		#en passant
 
 		#half moves since last capture or pawn advance
@@ -56,12 +56,12 @@ class gameState():
 
 		return position
 
-	def load_position(self, nef):
+	def load_position(self, fen):
 		self.Board = []
-		rows = nef.split("/")
-		for nef_row in rows:
+		rows = fen.split("/")
+		for fen_row in rows:
 			row = []
-			for piece in nef_row:
+			for piece in fen_row:
 				try:
 					empty = int(piece)
 					for i in range(empty):
@@ -86,53 +86,32 @@ class gameState():
 					if "R" in piece:
 						moves = []
 						for i in [-1,1]:
-							moves = self.rbqInner(moves, row_n, column_n, i,0)
-							moves = self.rbqInner(moves, row_n, column_n, 0,i)
+							moves = self.rbqInner("R", moves, row_n, column_n, i,0)
+							moves = self.rbqInner("R", moves, row_n, column_n, 0,i)
 						self.legal_moves[(row_n,column_n)] = moves
 
 					if "N" in piece:
 						moves = []
-
 						for i in [-2,2]:
 							for j in [-1,1]:
-								next_sq = [row_n+i,column_n+j]
-								if self.on_board(next_sq):
-									isBlocked = self.occupied(next_sq)
-									if not isBlocked:
-										moves.append(next_sq)
-									elif isBlocked == self.turn or isBlocked=="K":
-										break
-									else:	
-										moves.append(next_sq)
-										break
-						for i in [-1,1]:
-							for j in [-2,2]:
-								next_sq = [row_n+i,column_n+j]
-								if self.on_board(next_sq):
-									isBlocked = self.occupied(next_sq)
-									if not isBlocked:
-										moves.append(next_sq)
-									elif isBlocked == self.turn or isBlocked=="K":
-										break
-									else:	
-										moves.append(next_sq)
-										break
-						self.legal_moves[(row_n,column_n)] = moves		
+								moves.append(self.rbqInner("N", moves, row_n, column_n, i, j))
+								moves.append(self.rbqInner("N", moves, row_n, column_n, j, i))
+						self.legal_moves[(row_n,column_n)] = moves
 
 					if "B" in piece:
 						moves = []
 						for i in [-1,1]:
 							for j in [-1,1]:
-								moves = self.rbqInner(moves, row_n, column_n, i,j)
+								moves = self.rbqInner("B", moves, row_n, column_n, i,j)
 						self.legal_moves[(row_n,column_n)] = moves
 
 					if "Q" in piece:
 						moves = []
 						for i in [-1,1]:
-							moves = self.rbqInner(moves, row_n, column_n, i,0)
-							moves = self.rbqInner(moves, row_n, column_n, 0,i)
+							moves = self.rbqInner("Q", moves, row_n, column_n, i,0)
+							moves = self.rbqInner("Q", moves, row_n, column_n, 0,i)
 							for j in [-1,1]:
-								moves = self.rbqInner(moves, row_n, column_n, i,j)
+								moves = self.rbqInner("Q", moves, row_n, column_n, i,j)
 						self.legal_moves[(row_n,column_n)] = moves
 
 					if "K" in piece:
@@ -183,21 +162,26 @@ class gameState():
 			row_n += 1
 		return self.legal_moves
 
-	def rbqInner(self,moves,check_moves, row, col, i,j):
+	def rbqInner(self,p, moves, row, col, i,j):
 		dis = 1
 		blocked = False
 		while True:
 			next_sq = [row+i*dis,col+j*dis]
-			if not self.on_board(next_sq):	break
 
-			isBlocked = self.occupied(next_sq)
-			if isBlocked == self.turn or isBlocked=="K":#blocked by own piece or by king
-				check_moves.append(next_sq)
-				break
-			elif not isBlocked:#free square
-				moves.append(next_sq)
-			else:#blocked by opponents piece (not the king)	
-				moves.append(next_sq)
+			if self.on_board(next_sq):
+				if p == "N":
+					print(next_sq)
+				isBlocked = self.occupied(next_sq)
+				if isBlocked == self.turn or isBlocked=="K":#blocked by own piece or by king
+					#check_moves.append(next_sq)
+					break
+				elif not isBlocked:#free square
+					moves.append(next_sq)
+				else:#blocked by opponents piece (not the king)
+					moves.append(next_sq)
+					break
+			else: break
+			if p == "N":
 				break
 			dis += 1
 		return moves

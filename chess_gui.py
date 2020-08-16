@@ -1,43 +1,44 @@
 import pygame
 import chess_engine
 
-height =  width = 480
+height = width = 480
 sq_size = int(height/8)
-black, white = (100,100,100),(255,255,255)
+black, white = (100, 100, 100), (255, 255, 255)
 pygame.init()
 board = pygame.display.set_mode((height, width))
 clock = pygame.time.Clock()
 
 images = {}
 def load_images():
-	pieces = ["wP","wR","wN","wB","wK","wQ","bP","bR","bN","bB","bK","bQ"]
+	pieces = ["wP", "wR", "wN", "wB", "wK", "wQ", "bP", "bR", "bN", "bB", "bK", "bQ"]
 	for piece in pieces:
 		images[piece] = pygame.image.load("images/"+piece+".png")
 
-def drawboard(state,legal_moves, marked_piece):
+
+def drawboard(state, legal_moves, marked_piece):
 	for row in range(8):
 		for column in range(8):
 			#draws chess board
-			if (row+column)%2 != 0:
+			if (row+column) % 2 != 0:
 				colour = black
 			else: colour = white
 			x = int(column * sq_size)
 			y = int(row * sq_size)
-			pygame.draw.rect(board, colour, (x, y,sq_size, sq_size))
+			pygame.draw.rect(board, colour, (x, y, sq_size, sq_size))
 
 			#draws pieces
 			piece = state[row][column]
 			if piece != "--":
 				x = column * sq_size
 				y = row * sq_size	
-				board.blit(images[piece], pygame.Rect(x,y,sq_size,sq_size))
+				board.blit(images[piece], pygame.Rect(x, y, sq_size, sq_size))
 
 			#draws legal moves
 			try:
-				if [row,column] in legal_moves[marked_piece]:
+				if [row, column] in legal_moves[marked_piece]:
 					x = int((column+0.5)*sq_size)
 					y = int((row+0.5)*sq_size)
-					pygame.draw.circle(board, (150,180,120),(x,y),5)
+					pygame.draw.circle(board, (150, 180, 120),(x, y), 5)
 			except KeyError:
 				pass
 
